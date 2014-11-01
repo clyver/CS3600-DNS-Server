@@ -86,7 +86,7 @@ header get_header() {
 	//We start by constructing all the needed fields
 
         // As per instructions, id is always 1337
-        int id = 1337;
+        int id = 0xdb42;
         // For a question, we say qr is 0.
         int qr = 0;
         // Standard query, so we say opcode is 0
@@ -105,14 +105,14 @@ header get_header() {
         int rcode = 0;
         // QDCOUNT, the number of entries in this in this question section
         // We have 1 question, so 1
-        unsigned int qdcount = 1;
+        unsigned int qdcount = 0x0001;
         // ANCOUNT, the number of resources records in the answer section
         // We provide no answers, so 0
-        unsigned int ancount = 0;
+        unsigned int ancount = 0x0000;
         // NSCOUNT, num of resource records in the authority resources section
-        unsigned int nscount = 0;
+        unsigned int nscount = 0x0000;
         // ARCOUNT, num of resource records in the additional records section
-        unsigned int arcount = 0;
+        unsigned int arcount = 0x0000;
 
 	 // Pack it all up into a header struct
         header this_header = {id, qr, opcode, aa, tc, rd, ra, z, rcode,
