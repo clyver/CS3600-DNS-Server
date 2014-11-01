@@ -122,6 +122,17 @@ header get_header() {
 	return this_header;
 }
 
+//Given this name, return the question we want to ask
+question get_question(char *name) {
+	// We have to parse the name to get the length and content of each sect
+
+	//Approach: keep count and accumulate a string until '.'
+
+	int length = 0;
+	char content[1024];
+
+}
+
 int main(int argc, char *argv[]) {
 	/**
    	* I've included some basic code for opening a socket in C, sending
@@ -149,6 +160,7 @@ int main(int argc, char *argv[]) {
 	//TODO: Some of the fields in this_header are coming back corrupted
 	header this_header = get_header();
 
+	question this_question = get_question(name);
 	//  - Now we construct the question
 
 
