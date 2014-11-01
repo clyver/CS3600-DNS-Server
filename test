@@ -1,0 +1,92 @@
+#!/usr/bin/perl
+
+my $SEMESTER = "cs3600f14";
+my $SOLDIR = "/course/$SEMESTER/code/solutions/project3/";
+my $SHELL = "3600dns";
+
+if (! (-e $SHELL)) {
+  error("Unable to find problem '$SHELL'.");
+}
+
+if (! (-e "$SOLDIR$SHELL")) {
+  print("$SOLDIR$SHELL");
+  error("Unable to find reference solution '$SHELL'.");
+}
+
+
+print "Milestone tests\n";
+my @tries = (	"\@129.10.112.152 joshua.ccs.neu.edu",
+                "\@129.10.112.152 www.ccs.neu.edu",
+                "\@129.10.112.152 atomic.ccs.neu.edu",
+                "\@129.10.112.152 slashdot.org",
+                "\@129.10.112.152 foobar.comd.fdomfdi.fdomfdo",
+                "\@129.10.112.152 a.b.c.d",
+                "\@129.10.112.152 128.42.5.4" );
+test($problem, 1, \@tries);
+
+print "\nFinal project tests\n";
+my @tries = (	"\@129.10.112.152 joshua.ccs.neu.edu",
+                "\@129.10.112.152 www.ccs.neu.edu",
+                "\@129.10.112.152 atomic.ccs.neu.edu",
+                "\@129.10.112.152 slashdot.org",
+                "\@129.10.112.152 foobar.comd.fdomfdi.fdomfdo",
+                "\@129.10.112.152 a.b.c.d",
+                "\@129.10.112.152 128.42.5.4",
+                "\@129.10.112.151 www.ccs.neu.edu",
+		"\@129.10.116.61 joshua.ccs.neu.edu",
+		"\@129.10.116.61 www.ccs.neu.edu",
+                "\@129.10.112.152:53 slashdot.org",
+                "\@129.10.112.152:54 slashdot.org");
+test($problem, 0, \@tries);
+
+print "\nExtra credit tests\n";
+my @tries = (	"-mx \@129.10.112.152 ccs.neu.edu",
+                "-mx \@129.10.112.152 www.ccs.neu.edu",
+                "-ns \@129.10.112.152 ccs.neu.edu",
+                "-ns \@129.10.112.152 slashdot.org");
+test($problem, 0, \@tries);
+
+sub test {
+  my ($problem, $response, $vals) = @_;
+
+  foreach $val (@{ $vals }) {
+    my $pr = $val;
+    $pr =~ s/\n/\\n/g;
+    print pad("  Input: '$pr'", 60);
+
+    if ($response) {
+      system("$SOLDIR$SHELL $val | grep ^\\\\[ > .expected 2>&1");
+      system("./$SHELL $val | grep ^\\\\[ > .actual 2>&1");
+    } else {
+      system("$SOLDIR$SHELL $val | sort > .expected 2>&1");
+      system("./$SHELL $val | sort > .actual 2>&1");
+    }
+    my $diff = `diff .expected .actual | egrep "^([<>]|Binary)"`;
+    `rm .actual .expected`;
+
+    if (! $diff) {
+      print "[PASS]\n";
+    } else {
+      print "[FAIL]\n";
+      print "    Diff in expected output:\n$diff\n";
+    }
+  }
+}
+
+sub error {
+  my ($msg) = @_;
+  print "ERROR: $msg\n";
+  exit(1);
+}
+
+sub pad {
+  my ($name, $len) = @_;
+  while (length($name) < $len) {
+    $name = "$name ";
+  }
+  if (length($name) > $len) {
+    $name = substr($name, 0, $len-3) . "...";
+  }
+  return $name;
+}
+
