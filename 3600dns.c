@@ -81,6 +81,7 @@ static void dump_packet(unsigned char *data, int size) {
     }
 }
 
+// Our headers are uniform, let's have a helper we can rely on to provide them
 header get_header() {
 	//We start by constructing all the needed fields
 
@@ -143,6 +144,7 @@ int main(int argc, char *argv[]) {
 	fprintf(stderr, "name: %s \n", name);	
 	
 	// Pack it all up into a header struct
+	//TODO: Some of the fields in this_header are coming back corrupted
 	header this_header = get_header();
 
 	//  - Now we construct the question
