@@ -81,6 +81,44 @@ static void dump_packet(unsigned char *data, int size) {
     }
 }
 
+header get_header() {
+	//We start by constructing all the needed fields
+
+        // As per instructions, id is always 1337
+        int id = 1337;
+        // For a question, we say qr is 0.
+        int qr = 0;
+        // Standard query, so we say opcode is 0
+        int opcode = 0;
+        // Authoritative Answer only matters in responses
+        int aa = 0;
+        // Truncation, matters only in responses
+        int tc = 0;
+        // Recursion Desired. We want the servre to pursue recursively
+        int rd = 1;
+        // Recursion Available.  Only matters for responses
+        int ra = 0;
+        // Reserved for future use.  Must be 0.
+        int z = 0;
+        // Response Code.  Only matters for responses 
+        int rcode = 0;
+        // QDCOUNT, the number of entries in this in this question section
+        // We have 1 question, so 1
+        unsigned int qdcount = 1;
+        // ANCOUNT, the number of resources records in the answer section
+        // We provide no answers, so 0
+        unsigned int ancount = 0;
+        // NSCOUNT, num of resource records in the authority resources section
+        unsigned int nscount = 0;
+        // ARCOUNT, num of resource records in the additional records section
+        unsigned int arcount = 0;
+
+	 // Pack it all up into a header struct
+        header this_header = {id, qr, opcode, aa, tc, rd, ra, z, rcode,
+                                 qdcount, ancount, nscount, arcount};
+	return this_header;
+}
+
 int main(int argc, char *argv[]) {
 	/**
    	* I've included some basic code for opening a socket in C, sending
@@ -102,42 +140,16 @@ int main(int argc, char *argv[]) {
 	char *name;
 	name = argv[2];
 	fprintf(stderr, "server: %s \n", server);
-	fprintf(stderr, "name: %s \n", name);
+	fprintf(stderr, "name: %s \n", name);	
 	
-	
-  	// construct the DNS request
-	 
-	//  - We start with constructing the header
-	
-	// As per instructions, id is always 1337
-	int id = 1337;
-	// For a question, we say qr is 0.
-	int qr = 0;
-	// Standard query, so we say opcode is 0
-	int opcode = 0;
-	// Authoritative Answer only matters in responses
-	int aa = 0;
-	// Truncation, matters only in responses
-	int tc = 0;
-	// Recursion Desired. We want the servre to pursue recursively
-	int rd = 1
-	// Recursion Available.  Only matters for responses
-	int ra = 0;
-	// Reserved for future use.  Must be 0.
-	int z = 0;
-	// Response Code.  Only matters for responses 
-	rcode = 0;
-	// QDCOUNT, the number of entries in this in this question section
-	// We have 1 question, so 1
-	int qdcount = 1;
-	// ANCOUNT, the number of resources records in the answer section
-	// We provide no answers, so 0
-	int ancount = 0;
-	// NSCOUNT, the number of resource records in the additional section
-	int nscount = 0;
+	// Pack it all up into a header struct
+	header this_header = get_header();
+
+	//  - Now we construct the question
+
 
  	// send the DNS request (and call dump_packet with your request)
-  
+ 	/* 
  	 // first, open a UDP socket  
   	int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
@@ -175,6 +187,6 @@ int main(int argc, char *argv[]) {
   	}
 	
   	// print out the result
-  
+  	*/
   	return 0;
 }
