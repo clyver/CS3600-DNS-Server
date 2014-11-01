@@ -16,6 +16,7 @@
 // The header
 typedef struct header_s{
 	int ID;
+	int FLAGS;
 	int QR;
 	int OPCODE;
 	int AA;

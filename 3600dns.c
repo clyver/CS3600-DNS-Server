@@ -87,6 +87,8 @@ header get_header() {
 
         // As per instructions, id is always 1337
         int id = 0xdb42;
+	// Flags, TODO, figure out if we need this
+	int flags = 0x100;
         // For a question, we say qr is 0.
         int qr = 0;
         // Standard query, so we say opcode is 0
@@ -115,8 +117,8 @@ header get_header() {
         unsigned int arcount = 0x0000;
 
 	 // Pack it all up into a header struct
-        header this_header = {id, qr, opcode, aa, tc, rd, ra, z, rcode,
-                                 qdcount, ancount, nscount, arcount};
+        header this_header = {id, flags, qr, opcode, aa, tc, rd, ra, z, 
+                             rcode,qdcount, ancount, nscount, arcount};
 	return this_header;
 }
 
