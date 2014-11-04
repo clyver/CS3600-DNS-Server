@@ -124,18 +124,18 @@ header get_header() {
 }
 
 //Given this name, return the question we want to ask
-char** token_qname(char *name) {
+char** token_qname(char *name, int *num_args) {
 	// We have to parse the name to get the length and content of each sect
 
 	//Approach: keep count and accumulate a string until '.'
 
-	int i = 0;
 	char **args = (char **) malloc(sizeof(name) + 2);
 	for (char *p = strtok(name, "."); p != NULL; p = strtok(NULL, ".")) {
-		args[i] = p;
-		i++;
+		args[*num_args] = p;
+		*num_args++;
 	}
 	args[i] = '\0';
+	
 	return args;
 
 }
@@ -182,13 +182,15 @@ int main(int argc, char *argv[]) {
 	header this_header = get_header();
 
 	// Begin to craft our question
-	int *x = 0;
-	char** token_name = token_qname(name, x);
+	int *num_args = 0;
+	char** token_name = token_qname(name, num_args);
 	
 	// Our qname
 	char qname[sizeof(name) + 2];
 	
-	for (int i = 0; i < 
+	for (int i = 0; i < *x; i++) {
+
+	}
 
 	
 	/*
