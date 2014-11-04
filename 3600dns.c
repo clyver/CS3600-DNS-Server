@@ -34,6 +34,7 @@
  * data - The pointer to your packet buffer
  * size - The length of your packet
  */
+
 static void dump_packet(unsigned char *data, int size) {
     unsigned char *p = data;
     unsigned char c;
@@ -123,15 +124,35 @@ header get_header() {
 }
 
 //Given this name, return the question we want to ask
-question get_question(char *name) {
+char** token_qname(char *name) {
 	// We have to parse the name to get the length and content of each sect
 
 	//Approach: keep count and accumulate a string until '.'
 
-	int length = 0;
-	char content[1024];
+	int i = 0;
+	char **args = (char **) malloc(sizeof(name) + 2);
+	for (char *p = strtok(name, "."); p != NULL; p = strtok(NULL, ".")) {
+		args[i] = p;
+		i++;
+	}
+	args[i] = '\0';
+	return args;
 
 }
+
+// Add a byte onto a string
+int append_char(char **string, int *size, char c) {
+	// Check for bad input
+	if (string == NULL || size == NULL) {
+		fprintf(stderr, "Can't append char. Got null.");
+		return -1;
+	}	
+	// Update the size of this string
+	*size = *size + sizeof(c);
+	realloc( *string, *size);
+	*string[*size] = c;
+}
+
 
 int main(int argc, char *argv[]) {
 	/**
@@ -149,23 +170,28 @@ int main(int argc, char *argv[]) {
 
   	// process the arguments
 	// TODO: We may have a third argument: 'port'
-	char *server;
-	server = argv[1];
-	char *name;
-	name = argv[2];
-	fprintf(stderr, "server: %s \n", server);
-	fprintf(stderr, "name: %s \n", name);	
-	
+	char *server = argv[1];
+	char *name = argv[2];
+
+	//Our packet that we will compose:
+	char *packet = NULL;
+	// This size of our packet that we will compose:
+	int *size = 0;
+
 	// Pack it all up into a header struct
-	//TODO: Some of the fields in this_header are coming back corrupted
 	header this_header = get_header();
 
-	question this_question = get_question(name);
-	//  - Now we construct the question
+	// Begin to craft our question
+	char** token_name = token_qname(name);
+	// Our qname
+	char qname[sizeof(name) + 2];
+	
+	for (int i = 0; i <
 
-
+	
+	/*
  	// send the DNS request (and call dump_packet with your request)
- 	/* 
+ 	 
  	 // first, open a UDP socket  
   	int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
