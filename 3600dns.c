@@ -182,16 +182,18 @@ int main(int argc, char *argv[]) {
 	header this_header = get_header();
 
 	// Begin to craft our question
-	char** token_name = token_qname(name);
+	int *x = 0;
+	char** token_name = token_qname(name, x);
+	
 	// Our qname
 	char qname[sizeof(name) + 2];
 	
-	for (int i = 0; i <
+	for (int i = 0; i < 
 
 	
 	/*
  	// send the DNS request (and call dump_packet with your request)
- 	 
+ 	 1
  	 // first, open a UDP socket  
   	int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
