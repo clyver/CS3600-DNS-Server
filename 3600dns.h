@@ -15,26 +15,29 @@
 
 // The header
 typedef struct header_s{
-	int ID;
-	int FLAGS;
-	int QR;
-	int OPCODE;
-	int AA;
-	int TC;
-	int RD;
-	int RA;
-	int Z;
-	unsigned int QDCOUNT;
-	unsigned int ANCOUNT;
-	unsigned int NSCOUNT;
-	unsigned int ARCOUNT;
+	short ID:16;
+
+	int RD:1;
+ 	int TC:1;	
+	int AA:1;
+	int OPCODE:4;
+	int qr:1;
+
+	int RCODE:4;
+	int Z:3;
+	int RA:1;
+
+	short QDCOUNT:16;
+	short ANCOUNT:16;
+	short NSCOUNT:16;
+	short ARCOUNT:16;
 }header;
 	
 // The question
 typedef struct question_s{
-	int QNAME;
-	int QTYPES;
-	int QCLASS;
+	short QNAME:16;
+	short QTYPES;
+	short QCLASS;
 }question;
 
 // The answer

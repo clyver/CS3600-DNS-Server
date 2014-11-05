@@ -87,9 +87,7 @@ header get_header() {
 	//We start by constructing all the needed fields
 
         // As per instructions, id is always 1337
-        int id = 0xdb42;
-	// Flags, TODO, figure out if we need this
-	int flags = 0x100;
+        short id = htons(1337);
         // For a question, we say qr is 0.
         int qr = 0;
         // Standard query, so we say opcode is 0
@@ -108,34 +106,45 @@ header get_header() {
         int rcode = 0;
         // QDCOUNT, the number of entries in this in this question section
         // We have 1 question, so 1
-        unsigned int qdcount = 0x0001;
+        unsigned int qdcount = htons(1);
         // ANCOUNT, the number of resources records in the answer section
         // We provide no answers, so 0
-        unsigned int ancount = 0x0000;
+        unsigned int ancount = 0;
         // NSCOUNT, num of resource records in the authority resources section
-        unsigned int nscount = 0x0000;
+        unsigned int nscount = 0;
         // ARCOUNT, num of resource records in the additional records section
-        unsigned int arcount = 0x0000;
+        unsigned int arcount = 0;
 
 	 // Pack it all up into a header struct
-        header this_header = {id, flags, qr, opcode, aa, tc, rd, ra, z, 
-                             rcode,qdcount, ancount, nscount, arcount};
+        header this_header = {id, rd, tc, aa, opcode, qr, rcode,
+				 z, ra, qdcount, ancount, nscount, arcount};
 	return this_header;
 }
 
-//Given this name, return the question we want to ask
-char** token_qname(char *name, int *num_args) {
+//Given this name, return the qname we want to ask
+char* qname(char *name) {
 	// We have to parse the name to get the length and content of each sect
 
 	//Approach: keep count and accumulate a string until '.'
-
-	char **args = (char **) malloc(sizeof(name) + 2);
-	for (char *p = strtok(name, "."); p != NULL; p = strtok(NULL, ".")) {
-		args[*num_args] = p;
-		*num_args++;
-	}
-	args[i] = '\0';
 	
+	// The index place in the args we generate
+	int index = 0;
+	char *args = (char *) malloc(sizeof(name) + 64);
+	for (char *token = strtok(name, "."); token != NULL; token = strtok(NULL, ".")) {
+		int x = strlen(token);
+		char tmp[2];
+		tmp[0] = x;
+		tmp[1] = '\0';
+		memcpy(args + index, tmp, 1);
+		index++;
+		memcpy(args + index, token, x);
+		index = index + x;
+	}
+
+	char tmp[2];
+	tmp[0] = 0;
+	tmp[1] = '\0';
+	memcpy(args + index, tmp, 1);	
 	return args;
 
 }
@@ -173,29 +182,46 @@ int main(int argc, char *argv[]) {
 	char *server = argv[1];
 	char *name = argv[2];
 
-	//Our packet that we will compose:
-	char *packet = NULL;
-	// This size of our packet that we will compose:
-	int *size = 0;
-
 	// Pack it all up into a header struct
-	header this_header = get_header();
+	header my_header = get_header();
 
 	// Begin to craft our question
-	int *num_args = 0;
-	char** token_name = token_qname(name, num_args);
-	
-	// Our qname
-	char qname[sizeof(name) + 2];
-	
-	for (int i = 0; i < *x; i++) {
+	// Get our qname
+	char *my_qname = qname(name);
 
-	}
+	// Get our qclass and qtype
+	char tmp[2];
+	tmp[0] = 1;
+	tmp[1] = '\0';
+	char qclass[1];
+	memcpy(qclass, tmp, 1); 
+	char *qtype = qclass;
+ 	
+	int header_size = sizeof(my_header);
+	int qname_size = sizeof(qname) + 2;
+	int qtype_size = sizeof(qtype);
+	int qclass_size = sizeof(qclass);
 
+	int packet_index = 0;
+	// Construct our packet
+	int packet_size = header_size  + qname_size + qclass_size + qtype_size;
+	char *packet = (char *) malloc(packet_size);
+
+	memcpy(packet, &my_header, header_size);
+
+        char the_qname[sizeof(name)+2];	
+	memcpy(the_qname, qname, qname_size + 2);
+
+	//memcpy(packet + packet_index, qtype, qtype_size);
+	//packet_index = packet_index + qtype_size;
+
+	//memcpy(packet + packet_index, qclass, qclass_size);
+	
+ 	dump_packet(&the_qname, 8);
 	
 	/*
- 	// send the DNS request (and call dump_packet with your request)
- 	 1
+	// send the DNS request (and call dump_packet with your request)
+ 	 
  	 // first, open a UDP socket  
   	int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
@@ -205,7 +231,6 @@ int main(int argc, char *argv[]) {
   	out.sin_port = htons(<<DNS server port number, as short>>);
   	out.sin_addr.s_addr = inet_addr(<<DNS server IP as char*>>);
 
-  	if (sendto(sock, <<your packet>>, <<packet len>>, 0, &out, sizeof(out)) < 0) {
     	// an error occurred
   	}
 
