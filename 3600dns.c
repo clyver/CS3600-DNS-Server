@@ -83,7 +83,7 @@ static void dump_packet(unsigned char *data, int size) {
 }
 
 // Our headers are uniform, let's have a helper we can rely on to provide them
-header get_header() {
+char * get_header() {
 	//We start by constructing all the needed fields
 
         // As per instructions, id is always 1337
@@ -118,7 +118,12 @@ header get_header() {
 	 // Pack it all up into a header struct
         header this_header = {id, rd, tc, aa, opcode, qr, rcode,
 				 z, ra, qdcount, ancount, nscount, arcount};
-	return this_header;
+	
+	// Tack it into a string
+	int header_size = 1024;
+	char *my_header[header_size];
+	memcpy(my_header, &this_header, header_size);
+	return my_header;
 }
 
 //Given this name, return the qname we want to ask
@@ -149,19 +154,13 @@ char* qname(char *name) {
 
 }
 
-// Add a byte onto a string
-int append_char(char **string, int *size, char c) {
-	// Check for bad input
-	if (string == NULL || size == NULL) {
-		fprintf(stderr, "Can't append char. Got null.");
-		return -1;
-	}	
-	// Update the size of this string
-	*size = *size + sizeof(c);
-	realloc( *string, *size);
-	*string[*size] = c;
+// Qname and qtype are identical, one call can return either
+char * get_qname_type() {
+	char tmp[2];
+	tmp[0] = 1;
+	tmp[1] = '\0';
+	return tmp;
 }
-
 
 int main(int argc, char *argv[]) {
 	/**
@@ -171,53 +170,43 @@ int main(int argc, char *argv[]) {
    	* get you started.
    	*/
 
-	// print out the input
-	printf("There are %d args \n", argc);
-  	for (int i = 0; i < argc; i++) {
-		printf("argv %d: %s \n", i, argv[i]);	
-	}
-
-  	// process the arguments
-	// TODO: We may have a third argument: 'port'
-	char *server = argv[1];
 	char *name = argv[2];
 
-	// Pack it all up into a header struct
-	header my_header = get_header();
+	// CAll get_header to return the string of a header struct
+	char *my_header = get_header();
 
 	// Begin to craft our question
 	// Get our qname
 	char *my_qname = qname(name);
-
-	// Get our qclass and qtype
-	char tmp[2];
-	tmp[0] = 1;
-	tmp[1] = '\0';
-	char qclass[1];
-	memcpy(qclass, tmp, 1); 
-	char *qtype = qclass;
  	
-	int header_size = sizeof(my_header);
-	int qname_size = sizeof(qname) + 2;
-	int qtype_size = sizeof(qtype);
-	int qclass_size = sizeof(qclass);
+	// Set up our size
+	int header_size = 12;
+	int qname_size = strlen(my_qname) + 1;
+	int qtype_size = 2;
+	int qclass_size = 2;
 
-	int packet_index = 0;
 	// Construct our packet
-	int packet_size = header_size  + qname_size + qclass_size + qtype_size;
+	int packet_index = 0;
+	int packet_size = header_size  + qname_size + qtype_size + qclass_size;
 	char *packet = (char *) malloc(packet_size);
 
-	memcpy(packet, &my_header, header_size);
+	// Append the header onto to the packet
+	memcpy(packet, my_header, header_size);
+	packet_index = packet_index + header_size;
 
-        char the_qname[sizeof(name)+2];	
-	memcpy(the_qname, qname, qname_size + 2);
+	// Append qname onto the packet
+        memcpy(packet + packet_index, my_qname, qname_size);
+	packet_index = packet_index + qname_size;
 
-	//memcpy(packet + packet_index, qtype, qtype_size);
-	//packet_index = packet_index + qtype_size;
+	// Append qtype onto the packet
+	packet[packet_index++] = 0;
+	packet[packet_index++] = 1;
 
-	//memcpy(packet + packet_index, qclass, qclass_size);
+	// Append qclass onto the size
+	packet[packet_index++] = 0;
+	packet[packet_index++] = 1;
 	
- 	dump_packet(&the_qname, 8);
+ 	dump_packet(packet, packet_size);
 	
 	/*
 	// send the DNS request (and call dump_packet with your request)
