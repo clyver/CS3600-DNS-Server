@@ -208,7 +208,7 @@ int main(int argc, char *argv[]) {
 	
  	dump_packet(packet, packet_size);
 	
-	/*
+	
 	// send the DNS request (and call dump_packet with your request)
  	 
  	 // first, open a UDP socket  
@@ -217,7 +217,11 @@ int main(int argc, char *argv[]) {
   	// next, construct the destination address
   	struct sockaddr_in out;
   	out.sin_family = AF_INET;
-  	out.sin_port = htons(<<DNS server port number, as short>>);
+  	//TODO: The port argument is optional.  We asume 53 if none specified.
+	// We check to see if ':' in input argv[1].  If, yes then edit the port.
+	out.sin_port = htons(<<DNS server port number, as short>>);
+	//TODO: For testing purposes, we can hardcode this for now with the test server:
+	// 'cs4700dns.ccs.neu.edu, 129.10.112.152'
   	out.sin_addr.s_addr = inet_addr(<<DNS server IP as char*>>);
 
     	// an error occurred
@@ -234,11 +238,14 @@ int main(int argc, char *argv[]) {
 
   	// construct the timeout
   	struct timeval t;
+	//TODO: We want to hardcode in 5 seconds i think.
   	t.tv_sec = <<your timeout in seconds>>;
   	t.tv_usec = 0;
 
   	// wait to receive, or for a timeout
   	if (select(sock + 1, &socks, NULL, NULL, &t)) {
+		// I think this is where some real work is. 
+		// We set up a buffer and our response is written to it
     		if (recvfrom(sock, <<your input buffer>>, <<input len>>, 0, &in, &in_len) < 0) {
       		// an error occured
     		}	
@@ -247,6 +254,6 @@ int main(int argc, char *argv[]) {
   	}
 	
   	// print out the result
-  	*/
+  
   	return 0;
 }
