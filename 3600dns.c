@@ -5,6 +5,7 @@
  *
  */
 
+
 #include <math.h>
 #include <ctype.h>
 #include <time.h>
@@ -227,7 +228,7 @@ int main(int argc, char *argv[]) {
 	packet[packet_index++] = 0;
 	packet[packet_index++] = 1;
 	
- 	dump_packet(packet, packet_size);
+	dump_packet(packet, packet_size);
 	
  		
 	// send the DNS request (and call dump_packet with your request)
@@ -241,9 +242,9 @@ int main(int argc, char *argv[]) {
 	
 	short port = get_port(server);
 	out.sin_port = htons(port);
-	//TODO: For testing purposes, we can hardcode this for now with the test server:
-	// 'cs4700dns.ccs.neu.edu, 129.10.112.152'
-  	out.sin_addr.s_addr = inet_addr("129.10.112.152");
+	// This is our test DNS server
+	char *dns_server = "129.10.112.152";
+  	out.sin_addr.s_addr = inet_addr(dns_server);
 
 	if (sendto(sock, packet, packet_size, 0, &out, sizeof(out)) < 0) {
     		// an error occurred
@@ -261,26 +262,30 @@ int main(int argc, char *argv[]) {
 
   	// construct the timeout
   	struct timeval t;
-	//TODO: We want to hardcode in 5 seconds i think.
+	// We want to hardcode in 5 seconds i think.
   	t.tv_sec = 5;
   	t.tv_usec = 0;
 
-	int buff_len = 65536;
+	int buff_len = 1024;
 	char buff[buff_len];
+	int response_length;
   	// wait to receive, or for a timeout
   	if (select(sock + 1, &socks, NULL, NULL, &t)) {
 		// I think this is where some real work is. 
 		// We set up a buffer and our response is written to it
-    		if (recvfrom(sock, buff, buff_len, 0, &in, &in_len) < 0) {
+		int response_length = recvfrom(sock, buff, buff_len, 0, &in, &in_len);
+    		if (response_length < 0) {
       		// an error occured
 		printf("Much bad. So error. @276");
+		return -1;
     		}	
   	} else {
 		printf("Much bad. So error. @279");
     		// a timeout occurred
+		return -1;
   	}
 	
   	// print out the result
-	printf("%s", buff);  	
-  	return 0;
+  	dump_packet(buff, response_length);
+	return 0;
 }
