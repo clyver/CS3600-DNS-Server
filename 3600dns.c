@@ -162,6 +162,27 @@ char * get_qname_type() {
 	return tmp;
 }
 
+short char_to_short(char *str_port) {
+	unsigned short port = (unsigned short) strtoul(str_port, NULL, 0);
+	return port;
+}
+
+
+// Given the 'server:port' argument, see if there
+// is a specified port (optional), else 53
+short get_port(char *input) {
+	// Get the pointer to the colon in the string, else null
+	char *port = strstr(input, ":");
+	if (port) {
+		// We want to exclude ":" so ++ to get the number
+		port++;
+		return char_to_short(port);
+	}
+	else {
+		return (short)53;
+	}
+}
+
 int main(int argc, char *argv[]) {
 	/**
    	* I've included some basic code for opening a socket in C, sending
@@ -171,7 +192,7 @@ int main(int argc, char *argv[]) {
    	*/
 
 	char *name = argv[2];
-
+	char *server = argv[1];
 	// CAll get_header to return the string of a header struct
 	char *my_header = get_header();
 
@@ -208,7 +229,7 @@ int main(int argc, char *argv[]) {
 	
  	dump_packet(packet, packet_size);
 	
-	
+ 		
 	// send the DNS request (and call dump_packet with your request)
  	 
  	 // first, open a UDP socket  
@@ -217,16 +238,16 @@ int main(int argc, char *argv[]) {
   	// next, construct the destination address
   	struct sockaddr_in out;
   	out.sin_family = AF_INET;
-  	//TODO: The port argument is optional.  We asume 53 if none specified.
-	// We check to see if ':' in input argv[1].  If, yes then edit the port.
-	out.sin_port = htons(<<DNS server port number, as short>>);
+	
+	short port = get_port(server);
+	out.sin_port = htons(port);
 	//TODO: For testing purposes, we can hardcode this for now with the test server:
 	// 'cs4700dns.ccs.neu.edu, 129.10.112.152'
-  	out.sin_addr.s_addr = inet_addr(<<DNS server IP as char*>>);
+  	out.sin_addr.s_addr = inet_addr("129.10.112.152");
 
     	// an error occurred
-  	}
-
+  //	}
+	/*
   	// wait for the DNS reply (timeout: 5 seconds)
   	struct sockaddr_in in;
   	socklen_t in_len;
@@ -254,6 +275,6 @@ int main(int argc, char *argv[]) {
   	}
 	
   	// print out the result
-  
+  	*/
   	return 0;
 }
