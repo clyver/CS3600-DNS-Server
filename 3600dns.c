@@ -245,9 +245,11 @@ int main(int argc, char *argv[]) {
 	// 'cs4700dns.ccs.neu.edu, 129.10.112.152'
   	out.sin_addr.s_addr = inet_addr("129.10.112.152");
 
-    	// an error occurred
-  //	}
-	/*
+	if (sendto(sock, packet, packet_size, 0, &out, sizeof(out)) < 0) {
+    		// an error occurred
+		printf("Much bad. So error. @250");
+ 	}
+
   	// wait for the DNS reply (timeout: 5 seconds)
   	struct sockaddr_in in;
   	socklen_t in_len;
@@ -260,21 +262,25 @@ int main(int argc, char *argv[]) {
   	// construct the timeout
   	struct timeval t;
 	//TODO: We want to hardcode in 5 seconds i think.
-  	t.tv_sec = <<your timeout in seconds>>;
+  	t.tv_sec = 5;
   	t.tv_usec = 0;
 
+	int buff_len = 65536;
+	char buff[buff_len];
   	// wait to receive, or for a timeout
   	if (select(sock + 1, &socks, NULL, NULL, &t)) {
 		// I think this is where some real work is. 
 		// We set up a buffer and our response is written to it
-    		if (recvfrom(sock, <<your input buffer>>, <<input len>>, 0, &in, &in_len) < 0) {
+    		if (recvfrom(sock, buff, buff_len, 0, &in, &in_len) < 0) {
       		// an error occured
+		printf("Much bad. So error. @276");
     		}	
   	} else {
+		printf("Much bad. So error. @279");
     		// a timeout occurred
   	}
 	
   	// print out the result
-  	*/
+	printf("%s", buff);  	
   	return 0;
 }
