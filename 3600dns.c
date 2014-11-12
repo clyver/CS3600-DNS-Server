@@ -212,6 +212,16 @@ short fetch_id(char *buff) {
 	return id;
 }
 
+short fetch_field(char *buff, int i) {
+	short f1 = buff[i];
+	short f2 = buff[i+1];
+	
+	short field = f1 << 8;
+	field = field | f2;
+
+	return field;
+}
+
 // Retrieve the rcode from a packet
 short get_rcode(char *buff) {
 	short rcode = buff[3] & 0x0f;
@@ -227,37 +237,24 @@ short get_num_answers(char *buff) {
 	return total_answer;
 }
 
-// We want to walk over the variable length question and get to the answer
-int get_answer(char *buff, int i) {
-	short x = buff[i];
-	if (x) {
-		i = i + x;
-		get_answer(buff, i);
-	} else {
-		i = i + 4;
-		return i;
-	}
-	
+// Walk over a name piece of data and return the beginning of the next piece
+int walk_over_name(char * buff, int i) {
+        int x = buff[i];
+        if ( (x & 192) == 192) {
+                // If x is a pointer, we're done as well
+                i++;
+                return i;
+        }
+        if (!x) {
+                // If x is zero, we're done
+                i++;
+                return i;
+        }
+        // Else this is a normal label, go the next
+        i = i + x + 1;
+        return walk_over_name(buff, i);
 }
 
-// We want to walk over the answer field to get to rdata
-int get_rdata(char *buff, int i) {
-	short x = buff[i];
-	if (x & 192 == 192) {
-		// If this is a pointer, type follows
-		i++;
-		return i;
-	}
-
-	if (x == 0) {
-		// If this is a 0, we've terminated
-		i++;
-		return i;
-	} else {
-		i++;
-		return get_rdata(buff, i);
-	}
-}
 
 int main(int argc, char *argv[]) {
 	/**
@@ -406,9 +403,24 @@ int main(int argc, char *argv[]) {
 
 	}	
 	//short num_answers = get_num_answers(buff);
-	int answer = get_answer(buff, 12);
-	printf("anser located at: %d \n", answer);
-	int rdata = get_rdata(buff, answer);
+	int question_name_end = walk_over_name(buff, 12);
+	short qtype = fetch_field(buff, question_name_end);
+	short qclass = fetch_field(buff, question_name_end + 2);
+	printf("Response Question- qtype: %d, qclass: %d \n", qtype, qclass);  
+	
+	// We increment +4 to get to the beginning of answer
+	int answer = question_name_end + 4;
+	printf("answer located at: %d \n", answer);
+	int answer_name_end = walk_over_name(buff, answer);
+	short atype = fetch_field(buff, answer_name_end);
+	short aclass = fetch_field(buff, answer_name_end + 2);
+	short ardata_len = fetch_field(buff, answer_name_end + 8);
+	printf("Response answer- type: %d, class: %d, rdlength %d \n", atype, aclass, ardata_len);
+	
+	// We increment to +9 to get to the beginning of rdata 
+	int rdata = answer_name_end + 10;
 	printf("rdata located at: %d \n", rdata);
+
+	dump_packet(buff, 120);
 	return 0;
 }
