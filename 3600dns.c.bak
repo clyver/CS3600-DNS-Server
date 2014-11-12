@@ -332,7 +332,7 @@ int main(int argc, char *argv[]) {
 
   	// wait for the DNS reply (timeout: 5 seconds)
   	struct sockaddr_in in;
-  	socklen_t in_len = sizeof(in);
+  	socklen_t in_len;
 
   	// construct the socket set
   	fd_set socks;
@@ -351,8 +351,6 @@ int main(int argc, char *argv[]) {
   	if (select(sock + 1, &socks, NULL, NULL, &t)) {
 		// I think this is where some real work is. 
 		// We set up a buffer and our response is written to it
-
-		printf("Calling recvfrom: %d, %p, %d, %p, %p\n", sock, buff, buff_len, &in, &in_len);
 		
     		if ( recvfrom(sock, buff, buff_len, 0, &in, &in_len) < 0) {
       			// an error occured
