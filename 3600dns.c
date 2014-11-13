@@ -242,18 +242,8 @@ char * get_server(char *input) {
 	}
 }
 
-//Given a packet, we want to verify the ID and also check the rcode for errors
-// If there are no errors, return the number of answers.
-short fetch_id(char *buff) {
-	short id1 = buff[0];
-	short id2 = buff[1];
-
-	short id = id1 << 8;
-	id = id | id2;
-
-	return id;
-}
-
+// Get the value of a field in the packet that takes up two indexes.
+// Many of our field fall into this category, so be able to extract them
 short fetch_field(char *buff, int i) {
 	short f1 = buff[i];
 	short f2 = buff[i+1];
@@ -306,15 +296,21 @@ char * get_auth(char *buff) {
 	
 }
 
-char * get_type(int i) {
+char * get_answer_type(int i) {
 	if( i == 5) {
 		return "CNAME";
 	}
 	if( i == 1) {
 		return "IP";
 	}
+	if ( i == 0x002) {
+		return "NS";
+	}
+	if ( i == 0x00f) {
+		return "MX";
+	}
 	else {
-		return "BAD ATYPE RETURN!";
+		return "ERROR\tBAD ATYPE RETURN!";
 	}
 }
 
@@ -326,9 +322,23 @@ int main(int argc, char *argv[]) {
    	* get you started.
    	*/
 
-	char *name = argv[2];
-	char *server = argv[1];
-	char *server2 = argv[1];
+	// Initialize the command line arguments
+	char *extra = NULL;
+	char *name = NULL;
+	char *server = NULL;
+
+	// Populate the arguments, if there is the optional argument, we handle it
+	if ( (strcmp(argv[1], "-mx") == 0) || (strcmp(argv[1],  "-ns") ==0) ) {
+		// Extra credit scenario 
+		extra = argv[1];
+		server = argv[2];
+		name = argv[3];
+	} else {
+		// Normal scenario
+		server = argv[1];
+		name = argv[2];
+	}
+
 	// CAll get_header to return the string of a header struct
 	char *my_header = get_header();
 
@@ -355,13 +365,25 @@ int main(int argc, char *argv[]) {
         memcpy(packet + packet_index, my_qname, qname_size);
 	packet_index = packet_index + qname_size;
 
-	// Append qtype onto the packet
-	packet[packet_index++] = 0;
-	packet[packet_index++] = 1;
+	// If this is an ma or ns request we change the type
+	if (extra) {
+		if (strcmp(extra, "-mx") == 0) {
+			packet[packet_index++] = 0;
+			packet[packet_index++] = 0x0f;
+		}
+		if (strcmp(extra, "-ns") == 0) {
+			packet[packet_index++] = 0;
+			packet[packet_index++] = 0x02;
+		}
+	} else {
+		// Append qtype onto the packet
+		packet[packet_index++] = 0;	
+		packet[packet_index++] = 1;
+	}
 
 	// Append qclass onto the size
-	packet[packet_index++] = 0;
-	packet[packet_index++] = 1;
+        packet[packet_index++] = 0;
+        packet[packet_index++] = 1;	
 	
 	dump_packet(packet, packet_size);
 	
@@ -382,12 +404,13 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 	
-	out.sin_port = get_port(server2);
+	out.sin_port = get_port(server);
   	out.sin_addr.s_addr = inet_addr(real_server);
 
 	if (sendto(sock, packet, packet_size, 0, &out, sizeof(out)) < 0) {
     		// an error occurred
 		printf("Much bad. So error. @250");
+		return -1;
  	}
 
   	// wait for the DNS reply (timeout: 5 seconds)
@@ -409,11 +432,6 @@ int main(int argc, char *argv[]) {
 	char buff[buff_len];
   	// wait to receive, or for a timeout
   	if (select(sock + 1, &socks, NULL, NULL, &t)) {
-		// I think this is where some real work is. 
-		// We set up a buffer and our response is written to it
-
-//		printf("Calling recvfrom: %d, %p, %d, %p, %p\n", sock, buff, buff_len, &in, &in_len);
-		
     		if ( recvfrom(sock, buff, buff_len, 0, &in, &in_len) < 0) {
       			// an error occured
 			perror("Recvfrom");
@@ -424,9 +442,7 @@ int main(int argc, char *argv[]) {
 		printf("NORESPONSE\n");		
 		return -1;
   	}
-  	// print out the result
-  	//dump_packet(buff, response_length);
-	short header_id = fetch_id(buff);
+	short header_id = fetch_field(buff, 0);
 	// Error if the header we receive does not match the header we sent
 	if (header_id != 1337) {
 		printf ("Headers do not match.\n");
@@ -469,7 +485,6 @@ int main(int argc, char *argv[]) {
 	int question_name_end = walk_over_name(buff, 12);
 	short qtype = fetch_field(buff, question_name_end);
 	short qclass = fetch_field(buff, question_name_end + 2);
-//	printf("Response Question- qtype: %d, qclass: %d \n", qtype, qclass);  
 	
 	// We increment +4 to get to the beginning of answer
 	int answer = question_name_end + 4;
@@ -480,31 +495,44 @@ int main(int argc, char *argv[]) {
 	// We have found the first answer
 	// For all answers, return either the cname or ip adress with auth
 	for(int a = 0; a < num_answers; a++) { 
-		//	printf("answer located at: %d \n", answer);
+		// Get this answer's data
 		int answer_name_end = walk_over_name(buff, answer);
 		short atype = fetch_field(buff, answer_name_end);
 		short aclass = fetch_field(buff, answer_name_end + 2);
 		short ardata_len = fetch_field(buff, answer_name_end + 8);
 		
-		char *type = get_type(atype);
+		char *type = get_answer_type(atype);
+		
 
-		// We increment to +9 to get to the beginning of rdata 
 		int rdata = answer_name_end + 10;
-		//printf("rdata located at: %d \n", rdata);
-
 		char *auth = get_auth(buff);
 		
 		if (type == "IP") {
+		   // If this in an IP address, shoot it out
 		   unsigned char tmp[4];
                    tmp[0] = buff[rdata];
                    tmp[1] = buff[rdata+1];
                    tmp[2] = buff[rdata+2];
                    tmp[3] = buff[rdata+3];
 		   printf("%s\t%d.%d.%d.%d\t%s\n",type, tmp[0], tmp[1], tmp[2], tmp[3], auth);
-		}  else {
-		   // this is a cname
+		} 
+		if (type == "CNAME") {
+		   // If it's a cname, we have to pull out the name from rdata and shoot it out
 		   char *name = crunch_name(buff, rdata);
 		   printf("%s\t%s\t%s\n", type, name, auth);
+		}
+		if (type == "MX") {
+		   // We handle the mail requests
+		   short pref = fetch_field(buff, rdata);
+		   char *name = crunch_name(buff, rdata+2);
+		   printf("%s\t%s\t%d\t%s\n", type, name, pref, auth);
+		   // If it's a mail server request we handle it
+		   
+		}
+		if (type == "NS") {
+	    	  // Finally, we handle ns
+		  char *name = crunch_name(buff, rdata);
+		  printf("%s\t%s\t%s\n", type, name, auth);
 		}
 		answer = answer_name_end + 10 + ardata_len;
 	}
