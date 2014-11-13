@@ -155,6 +155,38 @@ char* qname(char *name) {
 
 }
 
+// Given a name (label/data), return an english name
+char * crunch_name(char *buff, int i) {
+	char *name = NULL;
+	int name_len = 0;
+	short x = buff[i];
+	
+	while(buff[i]) {
+		x = buff[i];
+		if ( (x & 192) == 192) {
+			x = x & 0x00111111;
+			x = x << 8;
+			x = x | buff[i+1];
+			i = x;
+			continue;
+		}
+		i++; // get not the label but the data
+		name = realloc(name, name_len + x);
+		while(x) {
+			name[name_len] = buff[i];
+			name_len++;
+			i++;
+			x = x - 1;
+		}
+		// after putting on each word, we want to put an the '.'
+		name[name_len] = '.';
+		name_len++;
+	}
+	// after we are done, we want to null terminate and get tid of last '.'
+	name[name_len-1] = '\0';
+	return name;
+}	
+
 // Qname and qtype are identical, one call can return either
 char * get_qname_type() {
 	char tmp[2];
@@ -190,13 +222,23 @@ short get_port(char *input) {
 }
 
 char * get_server(char *input) {
-	char *token = "";
 	if (input[0] != '@') {
-		return token;		
+		return "";		
 	} else {
-		input++;
-		token = strtok(input, ":");
-		return token;
+                input++;
+                int server_len = 0;
+                int i;
+                for (i = 0; i < strlen(input); i++) {
+                        if (input[i] == ':') {
+                                 break;
+                        }
+                }
+                server_len = i;
+                char *fluffy = (char *) malloc(server_len);
+                strncpy(fluffy, input, server_len);
+                
+                fluffy[server_len] = '\0';
+                return fluffy;
 	}
 }
 
@@ -230,11 +272,7 @@ short get_rcode(char *buff) {
 
 // Get the number of answers from this packet's header
 short get_num_answers(char *buff) {
-	short ans1 = buff[6];
-	short ans2 = buff[7];
-	short total_answer = ans1 << 8;
-	total_answer = total_answer | ans2;
-	return total_answer;
+	return fetch_field(buff, 6);
 }
 
 // Walk over a name piece of data and return the beginning of the next piece
@@ -242,7 +280,7 @@ int walk_over_name(char * buff, int i) {
         int x = buff[i];
         if ( (x & 192) == 192) {
                 // If x is a pointer, we're done as well
-                i++;
+                i += 2;
                 return i;
         }
         if (!x) {
@@ -255,6 +293,30 @@ int walk_over_name(char * buff, int i) {
         return walk_over_name(buff, i);
 }
 
+// Get the auth bit in the header
+char * get_auth(char *buff) {
+	
+	short x = buff[2];
+	short auth = x & 0x04;
+	if(auth == 4) {
+		return "auth";
+	} else {
+		return "nonauth";
+	}
+	
+}
+
+char * get_type(int i) {
+	if( i == 5) {
+		return "CNAME";
+	}
+	if( i == 1) {
+		return "IP";
+	}
+	else {
+		return "BAD ATYPE RETURN!";
+	}
+}
 
 int main(int argc, char *argv[]) {
 	/**
@@ -266,6 +328,7 @@ int main(int argc, char *argv[]) {
 
 	char *name = argv[2];
 	char *server = argv[1];
+	char *server2 = argv[1];
 	// CAll get_header to return the string of a header struct
 	char *my_header = get_header();
 
@@ -313,14 +376,14 @@ int main(int argc, char *argv[]) {
   	out.sin_family = AF_INET;
 
 	// Get the ip address of the server we're pinging
- //	char *real_server = get_server(server);	
-//	if ( strcmp(real_server, "") == 0) {
-//		printf("The input server is not in a valid form\n");
-//		return -1;
-//	}
+ 	char *real_server = get_server(server);	
+	if ( strcmp(real_server, "") == 0) {
+		printf("The input server is not in a valid form\n");
+		return -1;
+	}
 	
-	out.sin_port = get_port(server);
-  	out.sin_addr.s_addr = inet_addr("129.10.112.152");
+	out.sin_port = get_port(server2);
+  	out.sin_addr.s_addr = inet_addr(real_server);
 
 	if (sendto(sock, packet, packet_size, 0, &out, sizeof(out)) < 0) {
     		// an error occurred
@@ -349,7 +412,7 @@ int main(int argc, char *argv[]) {
 		// I think this is where some real work is. 
 		// We set up a buffer and our response is written to it
 
-		printf("Calling recvfrom: %d, %p, %d, %p, %p\n", sock, buff, buff_len, &in, &in_len);
+//		printf("Calling recvfrom: %d, %p, %d, %p, %p\n", sock, buff, buff_len, &in, &in_len);
 		
     		if ( recvfrom(sock, buff, buff_len, 0, &in, &in_len) < 0) {
       			// an error occured
@@ -406,21 +469,45 @@ int main(int argc, char *argv[]) {
 	int question_name_end = walk_over_name(buff, 12);
 	short qtype = fetch_field(buff, question_name_end);
 	short qclass = fetch_field(buff, question_name_end + 2);
-	printf("Response Question- qtype: %d, qclass: %d \n", qtype, qclass);  
+//	printf("Response Question- qtype: %d, qclass: %d \n", qtype, qclass);  
 	
 	// We increment +4 to get to the beginning of answer
 	int answer = question_name_end + 4;
-	printf("answer located at: %d \n", answer);
-	int answer_name_end = walk_over_name(buff, answer);
-	short atype = fetch_field(buff, answer_name_end);
-	short aclass = fetch_field(buff, answer_name_end + 2);
-	short ardata_len = fetch_field(buff, answer_name_end + 8);
-	printf("Response answer- type: %d, class: %d, rdlength %d \n", atype, aclass, ardata_len);
-	
-	// We increment to +9 to get to the beginning of rdata 
-	int rdata = answer_name_end + 10;
-	printf("rdata located at: %d \n", rdata);
 
-	dump_packet(buff, 120);
+ 	
+	int num_answers = get_num_answers(buff);
+
+	// We have found the first answer
+	// For all answers, return either the cname or ip adress with auth
+	for(int a = 0; a < num_answers; a++) { 
+		//	printf("answer located at: %d \n", answer);
+		int answer_name_end = walk_over_name(buff, answer);
+		short atype = fetch_field(buff, answer_name_end);
+		short aclass = fetch_field(buff, answer_name_end + 2);
+		short ardata_len = fetch_field(buff, answer_name_end + 8);
+		
+		char *type = get_type(atype);
+
+		// We increment to +9 to get to the beginning of rdata 
+		int rdata = answer_name_end + 10;
+		//printf("rdata located at: %d \n", rdata);
+
+		char *auth = get_auth(buff);
+		
+		if (type == "IP") {
+		   unsigned char tmp[4];
+                   tmp[0] = buff[rdata];
+                   tmp[1] = buff[rdata+1];
+                   tmp[2] = buff[rdata+2];
+                   tmp[3] = buff[rdata+3];
+		   printf("%s\t%d.%d.%d.%d\t%s\n",type, tmp[0], tmp[1], tmp[2], tmp[3], auth);
+		}  else {
+		   // this is a cname
+		   char *name = crunch_name(buff, rdata);
+		   printf("%s\t%s\t%s\n", type, name, auth);
+		}
+		answer = answer_name_end + 10 + ardata_len;
+	}
+
 	return 0;
 }
