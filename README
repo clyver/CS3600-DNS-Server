@@ -1,3 +1,4 @@
 Milestone 1:
 
- Our high-level approach to this was to have helpers that create helpers that create all the different parts of the packet.  Once all were collected, we memcpy them on to packet and dump it.
+ Our very high-level approach to this was to have helpers that create all
+ the different parts of the packet.  Once all were collected, we memcpy them on to packet and dump it.
